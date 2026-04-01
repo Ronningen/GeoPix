@@ -8,40 +8,40 @@ import torch.nn.functional as F
 from transformers import PreTrainedModel
 from transformers.models.llava.modeling_llava import LlavaMultiModalProjector
 
-from model.custom_llava import CustomLlavaForConditionalGeneration
-from model.configuration_GeoPix import GeoPixConfig
-from model.mask_predictor import MaskPredictorModel
-from model.prompt_encoder import PromptEncoderModel
-from model.memory import ClasswiseLearnableMemoryModel
+from geopix.model.custom_llava import CustomLlavaForConditionalGeneration
+from geopix.model.configuration_GeoPix import GeoPixConfig
+from geopix.model.mask_predictor import MaskPredictorModel
+from geopix.model.prompt_encoder import PromptEncoderModel
+from geopix.model.memory import ClasswiseLearnableMemoryModel
 
 
 class ImageNeck(nn.Module):
-    def __init__(self, 
-                 in_channels=1024, 
-                 mid_channels=512, 
+    def __init__(self,
+                 in_channels=1024,
+                 mid_channels=512,
                  out_channels=256):
         super(ImageNeck, self).__init__()
-        
+
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
         )
-        
+
         self.upsample = nn.Upsample(size=(32, 32), mode='bilinear', align_corners=False)
-        
+
         self.conv2 = nn.Sequential(
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
-    
+
     def forward(self, x):
-        x = self.conv1(x)   
+        x = self.conv1(x)
         x = self.upsample(x)
-        x = self.conv2(x)   
+        x = self.conv2(x)
         return x
-    
+
 
 class MultimodalMaskProjector(LlavaMultiModalProjector):
     pass
@@ -77,7 +77,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
 
         # Initialize Memory Bank
         self.classwise_learnable_module = ClasswiseLearnableMemoryModel
-        
+
         self.image_neck_rough = self._init_image_neck(config)
         self.image_neck_detail = self._init_image_neck(config)
 
@@ -132,7 +132,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
             if torch.all(generated_ids[0, i:i+seg_len] == seg_token_ids):
                 seg_token_mask[0, i:i+seg_len] = True
 
-        
+
         if not torch.any(seg_token_mask == True): # 没有seg token
             return generated_ids, None
 
@@ -141,7 +141,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
         vlm_hidden_state = [hs[-1] for hs in hidden_states]
         vlm_hidden_state[0] = vlm_hidden_state[0][:, -1, :].unsqueeze(1)
         vlm_hidden_state = torch.cat(vlm_hidden_state, dim=1) # [num_target, L, dim]
-        
+
         vlm_hidden_state = self.text_hidden_fcs(vlm_hidden_state)
 
         group_hidden_states = []
@@ -170,7 +170,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
         patch_size = int(patch_count ** 0.5)
         img_embeddings = img_embeddings.permute(0,2,1)
         img_embeddings = img_embeddings.view(self.config.image_feature_scale_num,-1,patch_size, patch_size)
-        
+
         rough_input = img_embeddings[0].unsqueeze(0)
         detail_input = img_embeddings[1].unsqueeze(0)
 
@@ -194,7 +194,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
             temp_low_res_masks, _ = self.mask_predictor(
                 img_embeds=img_embeds,
                 image_pe=image_pe,
-                sparse_embeddings=sparse_embeddings, 
+                sparse_embeddings=sparse_embeddings,
                 dense_embeddings=dense_embeddings,
                 previous_masks=l_low_res_masks if l > 0 else None,
                 level=l,
@@ -212,7 +212,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
             l_low_res_masks, _ = self.mask_predictor(
                 img_embeds=mem_img_embeds,
                 image_pe=image_pe,
-                sparse_embeddings=sparse_embeddings, 
+                sparse_embeddings=sparse_embeddings,
                 dense_embeddings=dense_embeddings,
                 previous_masks=l_low_res_masks if l >0 else None,
                 level=l,
@@ -221,16 +221,16 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
             low_res_masks = low_res_masks + self.multiscale_scalar[l] * F.interpolate(l_low_res_masks.float(), (out_size, out_size),mode="bilinear",align_corners=False,).to(l_low_res_masks)
 
         pred_mask = low_res_masks[:, 0]
-        
+
         return generated_ids, pred_mask
-        
+
     def get_residual_image_feature(self, pixel_values: torch.FloatTensor):
         rough_image_feature, detail_image_feature = self.vlm.get_image_embeds(
             pixel_values=pixel_values, vision_feature_layers=[-11, -2])
-        
+
         residual_image_feature = torch.stack([detail_image_feature, rough_image_feature], dim=0)
 
-        return residual_image_feature        
+        return residual_image_feature
 
 
     @classmethod
@@ -238,7 +238,7 @@ class GeoPixForConditinalGeneration(GeoPixPretrainedModel):
         config = cls.config_class.from_pretrained(load_directory)
 
         model = cls(config)
-        
+
         model.vlm = model.vlm.from_pretrained(os.path.join(load_directory, 'vlm'), low_cpu_mem_usage=True)#, attn_implementation="flash_attention_2", torch_dtype=torch.bfloat16)
         model.mask_predictor = model.mask_predictor.from_pretrained(os.path.join(load_directory, 'seg'), low_cpu_mem_usage=True,)
         model.prompt_encoder = model.prompt_encoder.from_pretrained(os.path.join(load_directory, 'pec'), low_cpu_mem_usage=True,)

@@ -2,8 +2,8 @@ from typing import List, Union
 import torch
 from transformers import PreTrainedTokenizer
 
-from model.processing_GeoPix import GeoPixValidProcessor
-from model.modelling_GeoPix import GeoPixForConditinalGeneration
+from geopix.model.processing_GeoPix import GeoPixValidProcessor
+from geopix.model.modelling_GeoPix import GeoPixForConditinalGeneration
 
 
 class GeoPixInferenceEngine():
@@ -11,14 +11,14 @@ class GeoPixInferenceEngine():
     valid_processor: GeoPixValidProcessor
     valid_tokenizer: PreTrainedTokenizer
     seg_token_idx: List[int]
-    
+
     model_max_length: int = 512
     seg_token_num: int = 3
     image_feature_scale_num: int = 2
     use_mm_start_end: bool = True
 
     def __init__(
-            self, 
+            self,
             pretrained_model_path:str,
             pretrained_processor_path:str,
     ):
@@ -57,9 +57,8 @@ class GeoPixInferenceEngine():
 
         output_texts = self.valid_tokenizer.batch_decode(generate_ids, skip_special_tokens=False)
         output_texts = output_texts[0].split('</s>')[0]
-        
+
         if pred_masks is not None:
             return output_texts, pred_masks
         else:
             return output_texts, None
-        

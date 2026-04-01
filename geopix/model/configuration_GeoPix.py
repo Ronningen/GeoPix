@@ -6,9 +6,9 @@ from transformers import PretrainedConfig
 from transformers.models.sam import SamConfig
 from transformers.models.llava import LlavaConfig
 
-from model.memory import ClasswiseLearnableMemoryConfig
-from model.prompt_encoder import PromptEncoderConfig
-from model.mask_predictor import MaskPredictorConfig
+from geopix.model.memory import ClasswiseLearnableMemoryConfig
+from geopix.model.prompt_encoder import PromptEncoderConfig
+from geopix.model.mask_predictor import MaskPredictorConfig
 
 class GeoPixConfig(PretrainedConfig):
     model_type = "GeoPix"
@@ -46,8 +46,8 @@ class GeoPixConfig(PretrainedConfig):
     @classmethod
     def from_pretrained(cls, load_directory: str):
         with open(os.path.join(load_directory, 'config.json'), 'r') as file:
-            geopix_args = json.load(file) 
-            
+            geopix_args = json.load(file)
+
         config = cls(
             vlm_config=LlavaConfig.from_json_file(os.path.join(load_directory, 'vlm', 'config.json')),
             seg_config=MaskPredictorConfig.from_json_file(os.path.join(load_directory, 'seg', 'config.json')),
@@ -55,6 +55,6 @@ class GeoPixConfig(PretrainedConfig):
             pec_config=PromptEncoderConfig.from_json_file(os.path.join(load_directory, 'pec', 'config.json')),
             **geopix_args
         )
-        
+
         return config
 

@@ -8,7 +8,7 @@ import re
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 current_folder = os.path.dirname(os.path.abspath(__file__))
 
-from dataset.inference_input import InferenceInputData
+from geopix.dataset.inference_input import InferenceInputData
 from engine import GeoPixInferenceEngine
 
 geopix_task = GeoPixInferenceEngine(
@@ -46,12 +46,12 @@ This is the online demo of GeoPix — a cool tool that helps with tasks in the r
 &ensp;•&ensp; <strong>Visual Question Answering</strong>: Ask questions about images, and GeoPix will provide answers. <br>
 &ensp;•&ensp; <strong>Image Captioning</strong>: Let GeoPix generate captions for your images. <br>
 
-<strong>Click on the example 📚 and directly submit to get started quickly! 💪🏻</strong> 
+<strong>Click on the example 📚 and directly submit to get started quickly! 💪🏻</strong>
 
 <strong>How to use GeoPix:</strong><br>
 &ensp;1.&ensp; To <u>get segmentation</u> results, select “Referring Segmentation” and input something like: “Can you segment xxx and xxx?”<br>
 &ensp;2.&ensp; For <u>bounding boxes</u> of objects, select “Visual Grounding” and try a question like: “Where is xxx?”<br>
-&ensp;3.&ensp; For language-based tasks like <u>visual question answering or image captioning</u>, just type something like you’d ask in a multi-modal LLM (e.g., LLaVA). 
+&ensp;3.&ensp; For language-based tasks like <u>visual question answering or image captioning</u>, just type something like you’d ask in a multi-modal LLM (e.g., LLaVA).
 
 <strong>A few notes:</strong><br>
 &ensp;•&ensp; Different prompts can lead to different results, so feel free to experiment! ✨<br>
@@ -123,7 +123,7 @@ def inference(task_type, input_str, input_image):
         task_identifier = "[Visual Question Answering]"
     elif task_type == "Referring Segmentation":
         task_identifier = "[segment]"
-    
+
     question = task_identifier + " " + input_str
     input_data = InferenceInputData(question=question, image_path=input_image)
     input_batch = [input_data[0]]
@@ -147,7 +147,7 @@ def inference(task_type, input_str, input_image):
         output_img, _ = bbox_postprocess(input_image, bboxes, mask_colors)
     else:
         output_img = input_image
-    
+
     output_texts = "ASSISTANT: " + output_texts
     return output_texts, output_img
 

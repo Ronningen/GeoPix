@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build_backend = "setuptools.build_meta"
+
+[project]
+name = "geopix"
+version = "0.1.0"
+description = "GeoPix: Multi-Modal Large Language Model for Pixel-level Image Understanding in Remote Sensing"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "transformers==4.57.6",
+    "tokenizers>=0.21.0",
+    "accelerate",
+    "opencv-python",
+    "pillow",
+    "numpy",
+]
+
+[project.optional-dependencies]
+demo = ["gradio"]
+
+[tool.setuptools]
+packages = ["geopix"]
